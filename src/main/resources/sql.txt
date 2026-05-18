@@ -1,0 +1,78 @@
+CREATE TABLE StockHistory (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, -- PK, 자동 증가
+    code VARCHAR(20) NOT NULL,                  -- 종목 코드
+    curPrc INT NOT NULL,                        -- 현재가 (보통 정수)
+    trdeQty BIGINT NOT NULL,                    -- 거래량 (큰 수 대비 BIGINT)
+    envelope DECIMAL(15, 2),                    -- 엔벨로프 중심선(소수점 포함 가능)
+    deviationRate FLOAT,                        -- 중심선 괴리율
+    rsi FLOAT,                                  -- RSI
+    macd FLOAT,                                 -- MACD
+    msignal FLOAT,                              -- MACD 시그널
+    oscillator FLOAT,                           -- MACD 오실레이터
+    diffRate FLOAT,                             -- 120선 기울
+    cntrStr FLOAT,                              -- 체결 강도
+    type VARCHAR(20),
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP     -- 현재 시간 자동 입력
+);
+
+CREATE TABLE Stock (
+    code VARCHAR(20) NOT NULL,    -- 종목 코드 (고유 키)
+    name VARCHAR(200) NOT NULL,   -- 종목명
+    type VARCHAR(500),            -- 종목 설명
+    detailType VARCHAR(00),       -- 상세 설명
+    PRIMARY KEY (code)            -- code를 기본키로 설정 (중복 방지)
+);
+
+CREATE TABLE dStockInfo (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, -- PK, 자동 증가
+    code VARCHAR(20) NOT NULL,                  -- 종목 코드
+    lastPrc INT NOT NULL,                       -- 종가
+    date DATE DEFAULT (CURRENT_DATE)             -- 오늘 날짜 (YYYY-MM-DD 형식)
+);
+
+
+-- 2. 테마 마스터 테이블
+CREATE TABLE IF NOT EXISTS theme (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,  -- 테마 고유 ID (PK)
+    name VARCHAR(100) NOT NULL UNIQUE,     -- 테마명 (중복 방지 UNIQUE)
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. 종목-테마 매핑 테이블 (N:M 관계 해소)
+CREATE TABLE IF NOT EXISTS stockThemeMap (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    stockCode VARCHAR(10) NOT NULL,       -- stock 테이블의 code 참조
+    themeId BIGINT NOT NULL,              -- theme 테이블의 id 참조
+
+    -- 외래 키 설정 (종목이나 테마가 삭제되면 매핑 데이터도 삭제되도록 CASCADE 설정)
+    CONSTRAINT fkStockCode FOREIGN KEY (stockCode)
+        REFERENCES stock(code) ON DELETE CASCADE,
+    CONSTRAINT fkThemeid FOREIGN KEY (themeId)
+        REFERENCES theme(id) ON DELETE CASCADE,
+
+    -- 동일한 종목이 동일한 테마에 중복 매핑되지 않도록 유니크 인덱스 추가
+    UNIQUE KEY ukStockTheme (stockCode, themeId)
+);
+
+SELECT
+    s.name AS 종목명,
+    h.code AS 종목코드,
+    h.curPrc AS 당시현재가,
+    d.lastPrc AS 당일종가,
+    h.envelope AS 중심선,
+    h.deviationRate AS 괴리율,
+    h.rsi AS RSI,
+    h.macd AS MACD,
+    h.msignal AS 'Signal',
+    h.oscillator AS 오실레이터,
+    h.date AS 포착시간
+FROM
+    history h
+INNER JOIN
+    stock s ON h.code = s.code
+INNER JOIN
+    dStockInfo d ON h.code = d.code
+WHERE
+    DATE(h.date) = '2026-04-08'
+    AND d.date = '2026-04-08'
+    AND h.curPrc > d.lastPrc;

@@ -1,0 +1,77 @@
+-- 1. 데이터베이스 생성 및 선택
+CREATE DATABASE IF NOT EXISTS wholesale_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE wholesale_db;
+
+-- 2. 회원 테이블 (Member)
+-- 역할: 도매업체(WHOLESALER) 및 구입업체(BUYER) 공통 정보
+CREATE TABLE member (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    login_id VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    address VARCHAR(255),
+    role VARCHAR(20) NOT NULL COMMENT 'WHOLESALER 또는 BUYER'
+);
+
+-- 3. 농산물 테이블 (Product)
+-- 역할: 도매업체가 등록한 무, 배추 등
+CREATE TABLE product (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    wholesaler_id BIGINT COMMENT '등록한 도매업체의 id',
+    name VARCHAR(100) NOT NULL,
+    price INT NOT NULL,
+    stock_quantity INT NOT NULL,
+    FOREIGN KEY (wholesaler_id) REFERENCES member(id) ON DELETE CASCADE
+);
+
+-- 4. 장바구니 테이블 (Cart)
+-- 역할: 회원 1명당 1개씩 가지는 장바구니 (1:1 관계)
+CREATE TABLE cart (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    member_id BIGINT UNIQUE COMMENT '장바구니 소유자의 id',
+    FOREIGN KEY (member_id) REFERENCES member(id) ON DELETE CASCADE
+);
+
+-- 5. 장바구니 상세 테이블 (Cart_Item)
+-- 역할: 장바구니에 담긴 농산물과 수량
+CREATE TABLE cart_item (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    cart_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    count INT NOT NULL COMMENT '담은 수량',
+    FOREIGN KEY (cart_id) REFERENCES cart(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE
+);
+
+-- 6. 주문 테이블 (Orders)
+-- 역할: 구입업체의 주문 내역 (테이블명은 order가 예약어이므로 orders로 지정)
+CREATE TABLE orders (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    buyer_id BIGINT NOT NULL COMMENT '주문한 구입업체의 id',
+    order_date DATETIME NOT NULL COMMENT '주문 일시',
+    status VARCHAR(50) NOT NULL COMMENT 'WAITING_PAYMENT, PAID, CANCELLED',
+    FOREIGN KEY (buyer_id) REFERENCES member(id) ON DELETE CASCADE
+);
+
+-- 7. 주문 상세 테이블 (Order_Item)
+-- 역할: 영수증에 찍히는 세부 주문 항목 (농산물, 당시 가격, 수량)
+CREATE TABLE order_item (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    order_price INT NOT NULL COMMENT '주문 당시의 가격',
+    count INT NOT NULL COMMENT '주문 수량',
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE
+);
+
+-- 8. 결제 테이블 (Payment)
+-- 역할: 주문에 대한 결제 정보
+CREATE TABLE payment (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT NOT NULL UNIQUE,
+    amount INT NOT NULL COMMENT '총 결제 금액',
+    payment_method VARCHAR(50) NOT NULL COMMENT '결제 수단 (CARD, CASH 등)',
+    status VARCHAR(50) NOT NULL COMMENT 'COMPLETED, CANCELLED',
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+);
