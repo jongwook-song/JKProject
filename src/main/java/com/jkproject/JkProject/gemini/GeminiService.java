@@ -26,7 +26,7 @@ public class GeminiService {
     private final ObjectMapper mapper = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
 
-    @Async
+    @Async("geminiExecutor")
     public CompletableFuture<String> generateMarketCommentary(String prompt, String title) {
         String model = "gemini-2.5-flash"; // 빠르고 저렴한 모델
         String url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey;
@@ -48,8 +48,8 @@ public class GeminiService {
 //                System.out.println(aiText);
                 String pdfPath = PdfService.createMarketReport(aiText, title);
 
-                telegramService.sendPdf("chatK", pdfPath);
-                telegramService.sendPdf("chatS", pdfPath);
+//                telegramService.sendPdf("chatK", pdfPath);
+//                telegramService.sendPdf("chatS", pdfPath);
 
                 return CompletableFuture.completedFuture(aiText);
             } else {

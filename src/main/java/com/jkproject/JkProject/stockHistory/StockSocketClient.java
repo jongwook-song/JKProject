@@ -316,7 +316,7 @@ public class StockSocketClient extends WebSocketClient {
 
     public void unregisterCondition(String conditionSeq) {
         JsonObject request = new JsonObject();
-        request.addProperty("trnm", "CNSRDEL");
+        request.addProperty("trnm", "CNSRCLR");
         request.addProperty("seq", conditionSeq);
         request.addProperty("stex_tp", "K");
         sendMessage(request);
